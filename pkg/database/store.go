@@ -41,3 +41,12 @@ func (db *DB) IsScanned(target, item string) bool {
 	db.Model(&ScanProgress{}).Where("target = ? AND item = ? AND status = ?", target, item, "scanned").Count(&count)
 	return count > 0
 }
+
+// GetAllFindings retrieves all findings from the database.
+func (db *DB) GetAllFindings() ([]Finding, error) {
+	var findings []Finding
+	if err := db.Order("created_at desc").Find(&findings).Error; err != nil {
+		return nil, err
+	}
+	return findings, nil
+}
