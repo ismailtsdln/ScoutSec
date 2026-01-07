@@ -20,6 +20,15 @@ A unified passive and active scanning solution with advanced analysis, CI/CD int
 - **GraphQL Security**: Introspection detection, batch query DOS, and recursive query vulnerability testing.
 - **API Fuzzing**: BOLA/IDOR checks, JSON/XML injection detection.
 
+### Authentication & Sessions
+- **JWT Analysis**: Algorithm detection, claims inspection, security validation.
+- **Form Authentication**: Automated browser-based login.
+- **Session Management**: Cookie jar with persistent header injection.
+
+### Reconnaissance
+- **Subdomain Enumeration**: Passive (Certificate Transparency) and active (bruteforce) discovery.
+- **Tech Fingerprinting**: Detect frameworks, CMS, libraries, and server technologies.
+
 ### Reporting
 - **Multiple Formats**: Automated JSON and HTML report generation.
 - **Severity Classification**: Risk-based categorization of findings.
@@ -62,6 +71,29 @@ scoutsec api --spec openapi.yaml --base-url https://api.example.com
 
 # Scan GraphQL endpoint
 scoutsec api --graphql https://api.example.com/graphql
+```
+
+### Authentication Testing
+
+```bash
+# Analyze JWT token
+scoutsec auth --jwt "eyJhbGc..."
+```
+
+### Reconnaissance
+
+```bash
+# Passive subdomain enumeration
+scoutsec recon --domain example.com --passive
+
+# Active subdomain bruteforce
+scoutsec recon --domain example.com --active
+
+# Technology fingerprinting
+scoutsec recon --domain example.com --fingerprint
+
+# Combined reconnaissance
+scoutsec recon --domain example.com --passive --fingerprint
 ```
 
 ### Reporting

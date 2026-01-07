@@ -37,6 +37,8 @@ func (f *Fuzzer) Start() {
 	var wg sync.WaitGroup
 	jobs := make(chan Payload, len(f.Payloads))
 
+	fmt.Printf("[*] Starting active fuzzing with %d payloads...\n", len(f.Payloads))
+
 	// Start workers
 	for i := 0; i < f.WorkerCount; i++ {
 		wg.Add(1)
@@ -50,7 +52,7 @@ func (f *Fuzzer) Start() {
 	close(jobs)
 
 	wg.Wait()
-	fmt.Println("Active scan completed.")
+	fmt.Println("\n[✓] Active scan completed.")
 }
 
 func (f *Fuzzer) worker(id int, jobs <-chan Payload, wg *sync.WaitGroup) {
