@@ -16,6 +16,7 @@ var (
 	passiveScan bool
 	useBrowser  bool
 	crawl       bool
+	resume      bool
 )
 
 // scanCmd represents the scan command
@@ -46,31 +47,47 @@ You can choose to run active scanning, passive scanning (proxy), headless browse
 			}
 
 			if crawl {
-				fmt.Println("Crawling target (SPA mode)...")
-				links, err := bScanner.Crawl(target)
-				if err != nil {
-					fmt.Printf("Error crawling: %v\n", err)
+				if resume && DB != nil && DB.IsScanned(target, "crawl_phase") {
+					fmt.Println("Resuming: Skipping crawl phase (already done)")
 				} else {
-					fmt.Printf("Found %d links:\n", len(links))
-					for _, l := range links {
-						fmt.Println(" - " + l)
-						// Add to report as info
-						report.AddIssue(report.Issue{
-							Name:        "Discovered Link",
-							Description: "Link found via SPA Crawl",
-							Severity:    "Info",
-							URL:         target,
-							Evidence:    l,
-						})
+					fmt.Println("Crawling target (SPA mode)...")
+					links, err := bScanner.Crawl(target)
+					if err != nil {
+						fmt.Printf("Error crawling: %v\n", err)
+					} else {
+						fmt.Printf("Found %d links:\n", len(links))
+						for _, l := range links {
+							fmt.Println(" - " + l)
+							// Add to report as info
+							report.AddIssue(report.Issue{
+								Name:        "Discovered Link",
+								Description: "Link found via SPA Crawl",
+								Severity:    "Info",
+								URL:         target,
+								Evidence:    l,
+							})
+						}
+						// Mark done
+						if DB != nil {
+							DB.MarkScanned(target, "crawl_phase")
+						}
 					}
 				}
 			}
 		}
 
 		if activeScan {
-			fmt.Println("Active scanning enabled")
-			fuzzer := active.NewFuzzer(target, 5)
-			fuzzer.Start()
+			if resume && DB != nil && DB.IsScanned(target, "active_phase") {
+				fmt.Println("Resuming: Skipping active scan phase (already done)")
+			} else {
+				fmt.Println("Active scanning enabled")
+				fuzzer := active.NewFuzzer(target, 5)
+				fuzzer.Start()
+				// Mark done
+				if DB != nil {
+					DB.MarkScanned(target, "active_phase")
+				}
+			}
 		}
 		if passiveScan {
 			fmt.Println("Passive scanning enabled on :8080")
@@ -101,4 +118,5 @@ func init() {
 	scanCmd.Flags().BoolVarP(&passiveScan, "passive", "p", false, "Enable passive scanning (proxy mode)")
 	scanCmd.Flags().BoolVarP(&useBrowser, "browser", "b", false, "Enable headless browser scanning (Screenshots & DOM)")
 	scanCmd.Flags().BoolVarP(&crawl, "crawl", "c", false, "Enable SPA crawling to find links")
+	scanCmd.Flags().BoolVar(&resume, "resume", false, "Resume scan (skip already processed steps)")
 }

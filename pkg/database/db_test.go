@@ -48,4 +48,20 @@ func TestDatabaseIntegration(t *testing.T) {
 	if saved.Severity != finding.Severity {
 		t.Errorf("Expected severity %s, got %s", finding.Severity, saved.Severity)
 	}
+
+	// Test Scan Progress
+	target := "https://example.com"
+	item := "crawl_phase"
+
+	if db.IsScanned(target, item) {
+		t.Error("Expected item to NOT be scanned yet")
+	}
+
+	if err := db.MarkScanned(target, item); err != nil {
+		t.Fatalf("Failed to mark scanned: %v", err)
+	}
+
+	if !db.IsScanned(target, item) {
+		t.Error("Expected item to be scanned")
+	}
 }

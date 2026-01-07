@@ -24,6 +24,15 @@ type Finding struct {
 	Evidence    string
 }
 
+// ScanProgress tracks the status of scanned items for resume capability.
+type ScanProgress struct {
+	ID        uint `gorm:"primaryKey"`
+	CreatedAt time.Time
+	Target    string `gorm:"index"`
+	Item      string `gorm:"index"` // URL or identifier
+	Status    string
+}
+
 // Init initializes the database connection and migrates the schema.
 func Init(path string) (*DB, error) {
 	db, err := gorm.Open(sqlite.Open(path), &gorm.Config{})
@@ -32,7 +41,7 @@ func Init(path string) (*DB, error) {
 	}
 
 	// Auto-migrate the schema
-	if err := db.AutoMigrate(&Finding{}); err != nil {
+	if err := db.AutoMigrate(&Finding{}, &ScanProgress{}); err != nil {
 		return nil, err
 	}
 
