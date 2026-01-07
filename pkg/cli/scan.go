@@ -3,6 +3,7 @@ package cli
 import (
 	"fmt"
 
+	"github.com/ismailtsdln/ScoutSec/pkg/report"
 	"github.com/ismailtsdln/ScoutSec/pkg/scanner/active"
 	"github.com/ismailtsdln/ScoutSec/pkg/scanner/passive"
 	"github.com/spf13/cobra"
@@ -23,9 +24,19 @@ You can choose to run active scanning, passive scanning (proxy), or both.`,
 	Run: func(cmd *cobra.Command, args []string) {
 		target := args[0]
 		fmt.Printf("Starting scan against %s\n", target)
+
+		scanType := "Mixed"
+		if activeScan && !passiveScan {
+			scanType = "Active"
+		} else if passiveScan && !activeScan {
+			scanType = "Passive"
+		}
+
+		report.InitReport(target, scanType)
+
 		if activeScan {
 			fmt.Println("Active scanning enabled")
-			fuzzer := active.NewFuzzer(target, 5) // 5 concurrent workers
+			fuzzer := active.NewFuzzer(target, 5)
 			fuzzer.Start()
 		}
 		if passiveScan {
@@ -36,12 +47,17 @@ You can choose to run active scanning, passive scanning (proxy), or both.`,
 					fmt.Printf("Error starting proxy: %v\n", err)
 				}
 			}()
-			// Block or wait signal? For now we just block to let proxy run.
+			// For Passive, we just block. In a real tool we'd handle signals better.
 			select {}
 		}
 
-		if !activeScan && !passiveScan {
-			fmt.Println("Warning: No scan mode selected. Use --active or --passive (or both).")
+		// If only active scan, we can save report here.
+		if activeScan && !passiveScan {
+			if err := report.GlobalReport.GenerateJSON("scoutsec_report.json"); err != nil {
+				fmt.Printf("Error generating report: %v\n", err)
+			} else {
+				fmt.Println("Report saved to scoutsec_report.json")
+			}
 		}
 	},
 }

@@ -1,8 +1,11 @@
 package analysis
 
 import (
+	"fmt"
 	"log"
 	"net/http"
+
+	"github.com/ismailtsdln/ScoutSec/pkg/report"
 )
 
 // Detector analyzes HTTP traffic for vulnerabilities.
@@ -40,6 +43,13 @@ func (d *Detector) checkPatterns(key, value, context string) {
 	for _, p := range d.Patterns {
 		if p.Regex.MatchString(value) {
 			log.Printf("[VULN] Possible %s detected in %s (%s=%s)", p.Name, context, key, value)
+			report.AddIssue(report.Issue{
+				Name:        p.Name,
+				Description: p.Description,
+				Severity:    p.Risk,
+				URL:         context, // Using context as URL placeholder for now
+				Evidence:    fmt.Sprintf("Key: %s, Value: %s", key, value),
+			})
 		}
 	}
 }
