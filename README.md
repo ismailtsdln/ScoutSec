@@ -3,16 +3,27 @@
 **ScoutSec** — Modern Web Application Security Scanning Toolkit  
 A unified passive and active scanning solution with advanced analysis, CI/CD integration, and comprehensive reporting.
 
-
----
-
 ## 🚀 Features
 
+### Core Scanning
 - **Passive Scanning**: Proxy-based traffic analysis to detect vulnerabilities without sending malicious payloads.
-- **Active Scanning**: Targeted security fuzzing and payload injection (under specific flags).
-- **Advanced Analysis**: OWASP Top 10 detection patterns, custom payload support.
-- **Reporting**: Automated generating of structured JSON and detailed HTML reports.
-- **Integration**: Designed for CI/CD pipelines and easy integration with other tools (Burp/ZAP).
+- **Active Scanning**: Targeted security fuzzing and payload injection with concurrent worker pools.
+- **Advanced Analysis**: OWASP Top 10 detection patterns with custom payload support.
+
+### Modern Web & SPA
+- **Headless Browser**: JavaScript execution via `chromedp` for DOM-based vulnerability detection.
+- **Screenshot Capture**: Automated evidence collection for visual confirmation.
+- **SPA Crawling**: JavaScript-aware link discovery for Single Page Applications.
+
+### API Security
+- **OpenAPI/Swagger**: Parse and automatically test REST API endpoints from spec files.
+- **GraphQL Security**: Introspection detection, batch query DOS, and recursive query vulnerability testing.
+- **API Fuzzing**: BOLA/IDOR checks, JSON/XML injection detection.
+
+### Reporting
+- **Multiple Formats**: Automated JSON and HTML report generation.
+- **Severity Classification**: Risk-based categorization of findings.
+- **CI/CD Ready**: Designed for seamless pipeline integration.
 
 ---
 
@@ -24,17 +35,36 @@ go install github.com/ismailtsdln/ScoutSec/cmd/scoutsec@latest
 
 ## 📌 Usage
 
-### Scanning
-
-To perform a scan against a target:
+### Web Application Scanning
 
 ```bash
-scoutsec scan https://target.com --active --passive
+# Active fuzzing
+scoutsec scan https://target.com --active
+
+# Passive proxy mode
+scoutsec scan https://target.com --passive
+
+# Browser-based scanning with screenshot
+scoutsec scan https://target.com --browser
+
+# SPA crawling
+scoutsec scan https://target.com --crawl
+
+# Combined mode
+scoutsec scan https://target.com --active --browser --crawl
+```
+
+### API Security Testing
+
+```bash
+# Scan REST API with OpenAPI spec
+scoutsec api --spec openapi.yaml --base-url https://api.example.com
+
+# Scan GraphQL endpoint
+scoutsec api --graphql https://api.example.com/graphql
 ```
 
 ### Reporting
-
-To generate a report from findings:
 
 ```bash
 scoutsec report --format html
@@ -45,6 +75,7 @@ scoutsec report --format html
 ### Prerequisites
 
 - Go 1.21+
+- Chrome/Chromium (for headless browser features)
 
 ### Running Tests
 
@@ -56,7 +87,8 @@ go test ./...
 
 - `cmd/`: Entry points.
 - `pkg/cli/`: CLI command definitions.
-- `pkg/scanner/`: Core scanning logic (active/passive).
+- `pkg/scanner/`: Core scanning logic (active/passive/browser).
+- `pkg/api/`: API security testing (OpenAPI/GraphQL).
 - `pkg/analysis/`: Detection and analysis engines.
 - `pkg/report/`: Reporting modules.
 
