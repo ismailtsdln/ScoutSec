@@ -1,6 +1,7 @@
 package report
 
 import (
+	"encoding/csv"
 	"encoding/json"
 	"os"
 	"text/template"
@@ -214,4 +215,38 @@ func (r *Report) GenerateSARIF(filename string) error {
 		return err
 	}
 	return os.WriteFile(filename, data, 0644)
+}
+
+// GenerateCSV saves the report as a CSV file.
+func (r *Report) GenerateCSV(filename string) error {
+	f, err := os.Create(filename)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+
+	writer := csv.NewWriter(f)
+	defer writer.Flush()
+
+	// Write Header
+	header := []string{"Name", "Severity", "URL", "Description", "Evidence"}
+	if err := writer.Write(header); err != nil {
+		return err
+	}
+
+	// Write Rows
+	for _, issue := range r.Issues {
+		row := []string{
+			issue.Name,
+			issue.Severity,
+			issue.URL,
+			issue.Description,
+			issue.Evidence,
+		}
+		if err := writer.Write(row); err != nil {
+			return err
+		}
+	}
+
+	return nil
 }

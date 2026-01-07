@@ -41,6 +41,8 @@ Supported formats include HTML and JSON.`,
 			err = r.GenerateHTML(reportFile)
 		case "sarif":
 			err = r.GenerateSARIF(reportFile)
+		case "csv":
+			err = r.GenerateCSV(reportFile)
 		default:
 			fmt.Printf("Unknown format: %s\n", reportFormat)
 			return
@@ -57,5 +59,5 @@ Supported formats include HTML and JSON.`,
 func init() {
 	rootCmd.AddCommand(reportCmd)
 
-	reportCmd.Flags().StringVarP(&reportFormat, "format", "f", "html", "Report format (html, json, sarif)")
+	reportCmd.Flags().StringVarP(&reportFormat, "format", "f", "html", "Report format (html, json, sarif, csv)")
 }
