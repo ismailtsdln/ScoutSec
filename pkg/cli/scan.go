@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/ismailtsdln/ScoutSec/pkg/plugins"
 	"github.com/ismailtsdln/ScoutSec/pkg/report"
 	"github.com/ismailtsdln/ScoutSec/pkg/scanner/active"
 	"github.com/ismailtsdln/ScoutSec/pkg/scanner/api"
@@ -28,6 +29,7 @@ var (
 	useTUI         bool
 	middlewareScan bool
 	openapiSpec    string
+	pluginsDir     string
 )
 
 // scanCmd represents the scan command
@@ -137,6 +139,28 @@ You can choose to run active scanning, passive scanning (proxy), headless browse
 			apiScanner.Start()
 		}
 
+		if pluginsDir != "" {
+			fmt.Printf("Loading plugins from: %s\n", pluginsDir)
+			loadedPlugins, err := plugins.LoadPlugins(pluginsDir)
+			if err != nil {
+				fmt.Printf("Error loading plugins: %v\n", err)
+			} else {
+				fmt.Printf("Loaded %d plugins\n", len(loadedPlugins))
+				for _, p := range loadedPlugins {
+					fmt.Printf("Running plugin: %s\n", p.Name())
+					issues, err := p.Run(target)
+					if err != nil {
+						fmt.Printf("Plugin %s failed: %v\n", p.Name(), err)
+					} else {
+						for _, issue := range issues {
+							fmt.Printf("[+] Plugin Found: %s\n", issue.Name)
+							report.AddIssue(issue)
+						}
+					}
+				}
+			}
+		}
+
 		if passiveScan {
 			fmt.Println("Passive scanning enabled on :8080")
 			scanner := passive.NewProxyScanner(":8080")
@@ -173,6 +197,7 @@ func init() {
 	scanCmd.Flags().BoolVar(&useTUI, "tui", false, "Enable interactive TUI mode")
 	scanCmd.Flags().BoolVar(&middlewareScan, "middleware", false, "Enable middleware specific scans")
 	scanCmd.Flags().StringVar(&openapiSpec, "openapi", "", "URL or path to OpenAPI/Swagger spec for API fuzzing")
+	scanCmd.Flags().StringVar(&pluginsDir, "plugins", "", "Directory containing .so plugins")
 
 	// Bind flags to viper
 	viper.BindPFlag("rate", scanCmd.Flags().Lookup("rate"))
