@@ -1,0 +1,26 @@
+version: '3.8'
+
+services:
+  master:
+    build: .
+    command: distributed master --port 8090
+    ports:
+      - "8090:8090"
+    volumes:
+      - ./scoutsec.db:/root/scoutsec.db
+
+  worker:
+    build: .
+    command: distributed worker --master-url http://master:8090
+    depends_on:
+      - master
+
+  dashboard:
+    build: .
+    command: serve --port 9090
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./scoutsec.db:/root/scoutsec.db
+    depends_on:
+      - master

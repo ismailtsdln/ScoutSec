@@ -30,6 +30,7 @@ var (
 	middlewareScan bool
 	openapiSpec    string
 	pluginsDir     string
+	luaDir         string
 )
 
 // scanCmd represents the scan command
@@ -139,15 +140,16 @@ You can choose to run active scanning, passive scanning (proxy), headless browse
 			apiScanner.Start()
 		}
 
+		// Load and run Go plugins
 		if pluginsDir != "" {
-			fmt.Printf("Loading plugins from: %s\n", pluginsDir)
+			fmt.Printf("[*] Loading Go plugins from: %s\n", pluginsDir)
 			loadedPlugins, err := plugins.LoadPlugins(pluginsDir)
 			if err != nil {
 				fmt.Printf("Error loading plugins: %v\n", err)
 			} else {
 				fmt.Printf("Loaded %d plugins\n", len(loadedPlugins))
 				for _, p := range loadedPlugins {
-					fmt.Printf("Running plugin: %s\n", p.Name())
+					fmt.Printf("[*] Running plugin: %s\n", p.Name())
 					issues, err := p.Run(target)
 					if err != nil {
 						fmt.Printf("Plugin %s failed: %v\n", p.Name(), err)
@@ -156,6 +158,22 @@ You can choose to run active scanning, passive scanning (proxy), headless browse
 							fmt.Printf("[+] Plugin Found: %s\n", issue.Name)
 							report.AddIssue(issue)
 						}
+					}
+				}
+			}
+		}
+
+		// Load and run Lua plugins
+		if luaDir != "" {
+			fmt.Printf("[*] Loading Lua plugins from: %s\n", luaDir)
+			loadedLua, err := plugins.LoadLuaPlugins(luaDir)
+			if err != nil {
+				fmt.Printf("Error loading Lua plugins: %v\n", err)
+			} else {
+				for _, lp := range loadedLua {
+					defer lp.Close()
+					if err := lp.Run(target); err != nil {
+						fmt.Printf("Lua plugin error: %v\n", err)
 					}
 				}
 			}
@@ -197,7 +215,8 @@ func init() {
 	scanCmd.Flags().BoolVar(&useTUI, "tui", false, "Enable interactive TUI mode")
 	scanCmd.Flags().BoolVar(&middlewareScan, "middleware", false, "Enable middleware specific scans")
 	scanCmd.Flags().StringVar(&openapiSpec, "openapi", "", "URL or path to OpenAPI/Swagger spec for API fuzzing")
-	scanCmd.Flags().StringVar(&pluginsDir, "plugins", "", "Directory containing .so plugins")
+	scanCmd.Flags().StringVar(&pluginsDir, "plugins", "", "Directory containing Go plugins (.so)")
+	scanCmd.Flags().StringVar(&luaDir, "lua", "", "Directory containing Lua plugins (.lua)")
 
 	// Bind flags to viper
 	viper.BindPFlag("rate", scanCmd.Flags().Lookup("rate"))
