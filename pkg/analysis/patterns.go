@@ -124,7 +124,7 @@ var DefaultPatterns = []Pattern{
 	// --- Server-Side Request Forgery (SSRF) ---
 	{
 		Name:        "SSRF (Localhost IPv4)",
-		Regex:       regexp.MustCompile(`(127\.0\.0\.1|0\.0\.0\.0)`),
+		Regex:       regexp.MustCompile(`(?i)(localhost|127\.0\.0\.1|0\.0\.0\.0)`),
 		Description: "Potential SSRF to localhost (IPv4)",
 		Risk:        "High",
 	},
@@ -300,7 +300,7 @@ var DefaultPatterns = []Pattern{
 	// --- LDAP Injection ---
 	{
 		Name:        "LDAP Injection",
-		Regex:       regexp.MustCompile(`(?i)(cn=|uid=|ou=|dc=|\(\&\(objectClass=|\(\|(objectClass=)`),
+		Regex:       regexp.MustCompile(`(?i)(cn=|uid=|ou=|dc=|\(\&\(objectClass=|\(\|(objectClass=))`),
 		Description: "Potential LDAP Injection",
 		Risk:        "High",
 	},

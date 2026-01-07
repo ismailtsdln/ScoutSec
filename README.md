@@ -1,131 +1,197 @@
 # ScoutSec
 
-**ScoutSec** — Modern Web Application Security Scanning Toolkit  
-A unified passive and active scanning solution with advanced analysis, CI/CD integration, and comprehensive reporting.
+<div align="center">
+
+  <h1>🛡️ ScoutSec</h1>
+  <p><strong>Modern Web Application Security Scanning Toolkit</strong></p>
+  
+  [![Go Report Card](https://goreportcard.com/badge/github.com/ismailtsdln/ScoutSec)](https://goreportcard.com/report/github.com/ismailtsdln/ScoutSec)
+  [![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE)
+  [![Go Version](https://img.shields.io/github/go-mod/go-version/ismailtsdln/ScoutSec)](go.mod)
+  [![Build Status](https://github.com/ismailtsdln/ScoutSec/actions/workflows/ci.yaml/badge.svg)](https://github.com/ismailtsdln/ScoutSec/actions)
+
+  <br>
+
+  <p>
+    <b>ScoutSec</b> is a unified, high-performance security scanner designed for modern web applications, APIs, and cloud-native environments. It bridges the gap between passive reconnaissance and active exploitation with a modular, extensible architecture.
+  </p>
+
+</div>
+
+---
 
 ## 🚀 Features
 
-### Core Scanning
-- **Passive Scanning**: Proxy-based traffic analysis to detect vulnerabilities without sending malicious payloads.
-- **Active Scanning**: Targeted security fuzzing and payload injection with concurrent worker pools.
-- **Advanced Analysis**: OWASP Top 10 detection patterns with custom payload support.
+### 🔍 Core Scanning Engine
+*   **Passive Analysis**: Non-intrusive traffic analysis to detect information leaks, misconfigurations, and sensitive data exposure without sending malicious payloads.
+*   **Active Fuzzing**: targeted payload injection using concurrent worker pools to identify SQLi, XSS, SSRF, and more.
+*   **Advanced Detection**: Comprehensive pattern matching engine with support for custom signatures and hundreds of built-in payloads.
 
-### Modern Web & SPA
-- **Headless Browser**: JavaScript execution via `chromedp` for DOM-based vulnerability detection.
-- **Screenshot Capture**: Automated evidence collection for visual confirmation.
-- **SPA Crawling**: JavaScript-aware link discovery for Single Page Applications.
+### 🌐 Modern Web & SPA Support
+*   **Headless Browser Integration**: Uses `chromedp` to render and interact with JavaScript-heavy applications (SPAs).
+*   **DOM Analysis**: Detects DOM-based XSS and client-side vulnerabilities that static analysis misses.
+*   **Visual Evidence**: Automated screenshot capture for verified findings.
 
-### API Security
-- **OpenAPI/Swagger**: Parse and automatically test REST API endpoints from spec files.
-- **GraphQL Security**: Introspection detection, batch query DOS, and recursive query vulnerability testing.
-- **API Fuzzing**: BOLA/IDOR checks, JSON/XML injection detection.
+### 🔌 API Security
+*   **OpenAPI/Swagger Scanning**: Automatically parses `openapi.yaml` or `swagger.json` specs to generate test cases for every endpoint.
+*   **GraphQL Support**: comprehensive testing for Introspection, Batching attacks, and Recursive DoS.
+*   **BOLA/IDOR Detection**: Automated testing for Broken Object Level Authorization vulnerabilities.
 
-### Authentication & Sessions
-- **JWT Analysis**: Algorithm detection, claims inspection, security validation.
-- **Form Authentication**: Automated browser-based login.
-- **Session Management**: Cookie jar with persistent header injection.
+### 🔐 Authentication & Sessions
+*   **JWT Security**: Deep analysis of JSON Web Tokens for weak signatures, `none` algorithm, and sensitive claim exposure.
+*   **Form Authentication**: Scriptable login flows to scan behind authenticated areas.
+*   **Smart Session Handling**: Persistent cookie jars and header management across all scan modules.
 
-### Reconnaissance
-- **Subdomain Enumeration**: Passive (Certificate Transparency) and active (bruteforce) discovery.
-- **Tech Fingerprinting**: Detect frameworks, CMS, libraries, and server technologies.
-
-### Reporting
-- **Multiple Formats**: Automated JSON and HTML report generation.
-- **Severity Classification**: Risk-based categorization of findings.
-- **CI/CD Ready**: Designed for seamless pipeline integration.
+### 🕵️ Reconnaissance
+*   **Subdomain Enumeration**: Hybrid approach using certificate transparency logs (passive) and DNS bruteforcing (active).
+*   **Tech Fingerprinting**: Identifies server technologies, frameworks, and libraries to tailor attack vectors.
 
 ---
 
 ## 🛠️ Installation
 
+### Using Go Install (Recommended)
+
 ```bash
 go install github.com/ismailtsdln/ScoutSec/cmd/scoutsec@latest
 ```
 
-## 📌 Usage
-
-### Web Application Scanning
+### Building from Source
 
 ```bash
-# Active fuzzing
-scoutsec scan https://target.com --active
-
-# Passive proxy mode
-scoutsec scan https://target.com --passive
-
-# Browser-based scanning with screenshot
-scoutsec scan https://target.com --browser
-
-# SPA crawling
-scoutsec scan https://target.com --crawl
-
-# Combined mode
-scoutsec scan https://target.com --active --browser --crawl
+git clone https://github.com/ismailtsdln/ScoutSec.git
+cd ScoutSec
+go build -o scoutsec ./cmd/scoutsec
 ```
 
-### API Security Testing
+> **Prerequisites**:
+> - Go 1.21 or higher
+> - Chrome/Chromium (installed for headless browser features)
 
+---
+
+## 📌 Usage
+
+ScoutSec is CLI-first and designed for easy integration into scripts and pipelines.
+
+### 1. Web Application Scanning
+
+**Basic Scan:**
 ```bash
-# Scan REST API with OpenAPI spec
-scoutsec api --spec openapi.yaml --base-url https://api.example.com
+scoutsec scan https://example.com
+```
 
-# Scan GraphQL endpoint
+**Full Active Scan with Fuzzing:**
+```bash
+scoutsec scan https://example.com --active
+```
+
+**Headless Browser Scan (SPAs):**
+```bash
+scoutsec scan https://example.com --browser --screenshot
+```
+
+### 2. API Security Testing
+
+**Scan REST API via OpenAPI Spec:**
+```bash
+scoutsec api --spec ./openapi.yaml --base-url https://api.example.com
+```
+
+**Scan GraphQL Endpoint:**
+```bash
 scoutsec api --graphql https://api.example.com/graphql
 ```
 
-### Authentication Testing
+### 3. Authentication & Tokens
 
+**Analyze a JWT:**
 ```bash
-# Analyze JWT token
-scoutsec auth --jwt "eyJhbGc..."
+scoutsec auth --jwt "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
 ```
 
-### Reconnaissance
-
+**Scan Authenticated Routes (Login):**
 ```bash
-# Passive subdomain enumeration
-scoutsec recon --domain example.com --passive
+scoutsec scan https://admin.example.com \
+  --login-url https://admin.example.com/login \
+  --username admin \
+  --password secret
+```
 
-# Active subdomain bruteforce
-scoutsec recon --domain example.com --active
+### 4. Reconnaissance
 
-# Technology fingerprinting
+**Enumerate Subdomains:**
+```bash
+scoutsec recon --domain example.com --passive --active
+```
+
+**Tech Fingerprinting:**
+```bash
 scoutsec recon --domain example.com --fingerprint
-
-# Combined reconnaissance
-scoutsec recon --domain example.com --passive --fingerprint
 ```
 
-### Reporting
+### 5. Reporting
+
+Generate reports in different formats:
 
 ```bash
-scoutsec report --format html
+# JSON Report (Default)
+scoutsec report --format json --output report.json
+
+# HTML Report
+scoutsec report --format html --output report.html
 ```
+
+---
+
+## ⚙️ Configuration
+
+ScoutSec can be configured via YAML file or environment variables.
+
+**Example `config.yaml`:**
+```yaml
+scanner:
+  concurrency: 20
+  timeout: 10s
+  user_agent: "ScoutSec-Scanner/1.0"
+
+active:
+  payloads_file: "custom_payloads.txt"
+  
+reporting:
+  include_sensitive: false
+```
+
+Load config:
+```bash
+scoutsec scan https://example.com --config ./config.yaml
+```
+
+---
 
 ## 🧪 Development
 
-### Prerequisites
-
-- Go 1.21+
-- Chrome/Chromium (for headless browser features)
-
 ### Running Tests
-
 ```bash
-go test ./...
+go test ./... -v
 ```
 
 ### Project Structure
-
-- `cmd/`: Entry points.
-- `pkg/cli/`: CLI command definitions.
-- `pkg/scanner/`: Core scanning logic (active/passive/browser).
-- `pkg/api/`: API security testing (OpenAPI/GraphQL).
-- `pkg/analysis/`: Detection and analysis engines.
-- `pkg/report/`: Reporting modules.
+- `cmd/`: Application entry points.
+- `pkg/analysis/`: Detection logic and pattern definitions.
+- `pkg/scanner/`: Active and passive scanning engines.
+- `pkg/api/`: API-specific testing modules.
+- `pkg/recon/`: Subdomain and asset discovery.
+- `pkg/report/`: Reporting and output generation.
 
 ---
 
 ## 📜 License
 
-Licensed under Apache-2.0.
+This project is licensed under the Apache-2.0 License - see the [LICENSE](LICENSE) file for details.
+
+---
+
+<div align="center">
+  <sub>Built with ❤️ by the ScoutSec Team</sub>
+</div>

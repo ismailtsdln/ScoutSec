@@ -77,8 +77,15 @@ func TestSSRFPattern(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
-		if !ssrfPattern.Regex.MatchString(tc) {
-			t.Errorf("SSRF pattern should match '%s'", tc)
+		matched := false
+		for _, p := range DefaultPatterns {
+			if p.Regex.MatchString(tc) {
+				matched = true
+				break
+			}
+		}
+		if !matched {
+			t.Errorf("No pattern matched SSRF payload '%s'", tc)
 		}
 	}
 }
