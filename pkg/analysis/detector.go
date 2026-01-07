@@ -11,12 +11,14 @@ import (
 // Detector analyzes HTTP traffic for vulnerabilities.
 type Detector struct {
 	Patterns []Pattern
+	Report   *report.Report
 }
 
 // NewDetector creates a new Detector with default patterns.
-func NewDetector() *Detector {
+func NewDetector(rep *report.Report) *Detector {
 	return &Detector{
 		Patterns: DefaultPatterns,
+		Report:   rep,
 	}
 }
 
@@ -71,13 +73,18 @@ func (d *Detector) auditSecurityHeaders(resp *http.Response) {
 
 	for _, h := range headersToAudit {
 		if resp.Header.Get(h.Name) == "" {
-			report.AddIssue(report.Issue{
+			issue := report.Issue{
 				Name:        fmt.Sprintf("Missing Security Header: %s", h.Name),
 				Description: fmt.Sprintf("The server is not sending the %s header, which exposes the application to various attacks.", h.Name),
 				Severity:    h.Severity,
 				URL:         resp.Request.URL.String(),
 				Evidence:    fmt.Sprintf("Host: %s", resp.Request.Host),
-			})
+			}
+			if d.Report != nil {
+				d.Report.AddIssue(issue)
+			} else {
+				report.AddIssue(issue)
+			}
 		}
 	}
 }
@@ -86,13 +93,18 @@ func (d *Detector) checkPatterns(key, value, context string) {
 	for _, p := range d.Patterns {
 		if p.Regex.MatchString(value) {
 			log.Printf("[VULN] Possible %s detected in %s (%s=%s)", p.Name, context, key, value)
-			report.AddIssue(report.Issue{
+			issue := report.Issue{
 				Name:        p.Name,
 				Description: p.Description,
 				Severity:    p.Risk,
 				URL:         context, // Using context as URL placeholder for now
 				Evidence:    fmt.Sprintf("Key: %s, Value: %s", key, value),
-			})
+			}
+			if d.Report != nil {
+				d.Report.AddIssue(issue)
+			} else {
+				report.AddIssue(issue)
+			}
 		}
 	}
 }

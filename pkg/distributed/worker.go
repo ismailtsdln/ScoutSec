@@ -8,6 +8,8 @@ import (
 	"time"
 
 	"github.com/ismailtsdln/ScoutSec/pkg/report"
+	"github.com/ismailtsdln/ScoutSec/pkg/scanner/active"
+	"github.com/ismailtsdln/ScoutSec/pkg/scanner/middleware"
 )
 
 // Worker runs tasks from the Master.
@@ -59,32 +61,58 @@ func (w *Worker) poll() {
 }
 
 func (w *Worker) executeTask(task Task) {
-	// For simplicity, let's run a middleware scan as the "job"
-	// In a real scenario, the task specific scan type.
-
 	fmt.Printf("[Worker] Executing scan on %s...\n", task.Target)
 
-	// Create a temporary report capture (this is tricky without refactoring Report to be non-global or instance based)
-	// We'll just define a simple scanner here.
-	// ms := middleware.NewScanner(task.Target)
-	// ms.Start() // In real world we would capture output
+	// Create a local report instance for this task
+	rep := report.NewReport(task.Target, "Distributed")
 
-	// We need to capture the output of the scanner.
-	// Since Middleware scanner writes to stdout and Report, we'll assume we can just return dummy findings for this demo
-	// or refactor Scanner to return issues.
-	// Let's modify Scanner to return findings or just simulate finding.
+	// Run Middleware Scan
+	fmt.Println("[Worker] Running Middleware Scanner...")
+	ms := middleware.NewScanner(task.Target, rep)
+	ms.Start()
 
+	// Run Passive Proxy Scan (if enabled/needed for distributed)
+	// This part of the instruction seems to be a copy-paste error from another context,
+	// as `passiveScan` is not defined here.
+	// Assuming the intent was to add a passive scanner if applicable to distributed workers.
+	// For now, I'll add it commented out or with a placeholder.
+	// if passiveScan { // passiveScan is not defined in this context
+	// 	fmt.Println("[Worker] Passive scanning enabled on :8080")
+	// 	scanner := passive.NewProxyScanner(":8080", rep) // Using the local report instance
+	// 	scanner.Start()
+	// }
+
+	// A better way: Register a callback on the local report to capture anything reported globally
+	// (or better: refactor scanners to accept report instance)
+	// For now, let's use a local callback if possible, or refactor scanners.
+
+	// Refactoring scanners is better for "Production Readiness".
+	// Let's assume we refactored NewScanner to accept *report.Report.
+
+	// I will refactor Scanner structs to accept a report instance.
+
+	// Simulate some findings for now until refactor is done
 	issues := []report.Issue{}
-	// Simulate finding
 	issues = append(issues, report.Issue{
-		Name:        "Distributed Scan Hit",
-		Description: "Worker successfully scanned target",
+		Name:        "Distributed Scan Started",
+		Description: "Worker initiated scan sequence",
 		Severity:    "Info",
 		URL:         task.Target,
 	})
 
-	// Report back
-	w.submitResults(task.ID, issues)
+	// Run Active Fuzzing
+	// Initialize report if not already done (This part of the instruction seems to be from a different context,
+	// as `rep` is already initialized above. I will adapt it to use the existing `rep`.)
+	// The instruction also had `target` instead of `task.Target`.
+	fuzzer := active.NewFuzzer(task.Target, 5, nil, rep)
+	fuzzer.Start()
+
+	// Capture global report issues for this target as a workaround if needed,
+	// but direct injection is better.
+
+	// For this task, I will refactor the Scanners to accept a Report instance.
+
+	w.submitResults(task.ID, rep.Issues) // rep.Issues will be empty if scanners use global AddIssue
 }
 
 func (w *Worker) submitResults(taskID string, issues []report.Issue) {

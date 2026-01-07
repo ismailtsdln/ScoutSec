@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"sync"
 	"text/template"
 	"time"
 
@@ -22,10 +23,44 @@ type Issue struct {
 
 // Report represents the final scan report.
 type Report struct {
-	Target   string    `json:"target"`
-	ScanTime time.Time `json:"scan_time"`
-	Issues   []Issue   `json:"issues"`
-	ScanType string    `json:"scan_type"` // Active, Passive, Mixed
+	Target    string    `json:"target"`
+	ScanTime  time.Time `json:"scan_time"`
+	Issues    []Issue   `json:"issues"`
+	ScanType  string    `json:"scan_type"` // Active, Passive, Mixed
+	mu        sync.Mutex
+	callbacks []func(Issue)
+}
+
+// NewReport creates a new Report instance.
+func NewReport(target, scanType string) *Report {
+	return &Report{
+		Target:   target,
+		ScanTime: time.Now(),
+		ScanType: scanType,
+		Issues:   []Issue{},
+	}
+}
+
+// AddIssue adds a finding to the report thread-safely.
+func (r *Report) AddIssue(issue Issue) {
+	r.mu.Lock()
+	r.Issues = append(r.Issues, issue)
+	callbacks := make([]func(Issue), len(r.callbacks))
+	copy(callbacks, r.callbacks)
+	r.mu.Unlock()
+
+	for _, cb := range callbacks {
+		if cb != nil {
+			cb(issue)
+		}
+	}
+}
+
+// RegisterCallback adds a listener for findings on this report instance.
+func (r *Report) RegisterCallback(cb func(Issue)) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	r.callbacks = append(r.callbacks, cb)
 }
 
 // GenerateJSON saves the report as a JSON file.

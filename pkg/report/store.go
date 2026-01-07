@@ -2,12 +2,11 @@ package report
 
 import (
 	"sync"
-	"time"
 )
 
 var (
 	GlobalReport   *Report
-	IssueCallbacks []func(Issue)
+	IssueCallbacks []func(Issue) // Global callbacks for all reports
 	once           sync.Once
 	mu             sync.Mutex
 )
@@ -15,27 +14,22 @@ var (
 // InitReport initializes the global report for the session.
 func InitReport(target string, scanType string) {
 	once.Do(func() {
-		GlobalReport = &Report{
-			Target:   target,
-			ScanTime: time.Now(),
-			ScanType: scanType,
-			Issues:   []Issue{},
-		}
+		GlobalReport = NewReport(target, scanType)
 	})
 }
 
 // AddIssue adds a finding to the global report thread-safely.
 func AddIssue(issue Issue) {
-	mu.Lock()
 	if GlobalReport != nil {
-		GlobalReport.Issues = append(GlobalReport.Issues, issue)
+		GlobalReport.AddIssue(issue)
 	}
-	// Copy slice under lock to iterate safely
+
+	// Also call global callbacks
+	mu.Lock()
 	callbacks := make([]func(Issue), len(IssueCallbacks))
 	copy(callbacks, IssueCallbacks)
 	mu.Unlock()
 
-	// Call all callbacks outside the report lock
 	for _, cb := range callbacks {
 		if cb != nil {
 			cb(issue)
@@ -43,7 +37,7 @@ func AddIssue(issue Issue) {
 	}
 }
 
-// RegisterCallback adds a new listener for findings.
+// RegisterCallback adds a new global listener for findings.
 func RegisterCallback(cb func(Issue)) {
 	mu.Lock()
 	defer mu.Unlock()

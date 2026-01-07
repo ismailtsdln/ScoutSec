@@ -5,6 +5,7 @@ import (
 	"os"
 
 	"github.com/ismailtsdln/ScoutSec/pkg/distributed"
+	"github.com/ismailtsdln/ScoutSec/pkg/report"
 	"github.com/spf13/cobra"
 )
 
@@ -23,6 +24,7 @@ var masterCmd = &cobra.Command{
 	Short: "Start the distributed master node",
 	Run: func(cmd *cobra.Command, args []string) {
 		fmt.Println("Starting Master Node...")
+		report.InitReport("Distributed Master", "Distributed")
 		m := distributed.NewMaster(masterPort)
 
 		// Example: Add a dummy task for testing

@@ -8,6 +8,7 @@ import (
 	"sync"
 
 	"github.com/ismailtsdln/ScoutSec/pkg/analysis"
+	"github.com/ismailtsdln/ScoutSec/pkg/report"
 	"github.com/ismailtsdln/ScoutSec/pkg/utils"
 )
 
@@ -20,19 +21,21 @@ type Fuzzer struct {
 	Client      *utils.HTTPClient
 	Ctx         context.Context
 	Cancel      context.CancelFunc
+	Report      *report.Report
 }
 
 // NewFuzzer creates a new instance of Fuzzer.
-func NewFuzzer(target string, workerCount int, client *utils.HTTPClient) *Fuzzer {
+func NewFuzzer(target string, workerCount int, client *utils.HTTPClient, rep *report.Report) *Fuzzer {
 	if client == nil {
 		client = utils.NewHTTPClient(10, 10, 3) // Defaults
 	}
 	return &Fuzzer{
 		TargetURL:   target,
 		Payloads:    GetDefaultPayloads(), // Start with default payloads
-		Detector:    analysis.NewDetector(),
+		Detector:    analysis.NewDetector(rep),
 		WorkerCount: workerCount,
 		Client:      client,
+		Report:      rep,
 	}
 }
 

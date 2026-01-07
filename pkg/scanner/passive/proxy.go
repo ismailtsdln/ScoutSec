@@ -6,6 +6,7 @@ import (
 
 	"github.com/elazarl/goproxy"
 	"github.com/ismailtsdln/ScoutSec/pkg/analysis"
+	"github.com/ismailtsdln/ScoutSec/pkg/report"
 )
 
 // ProxyScanner handles the passive scanning via an HTTP proxy.
@@ -15,10 +16,10 @@ type ProxyScanner struct {
 }
 
 // NewProxyScanner creates a new instance of ProxyScanner.
-func NewProxyScanner(addr string) *ProxyScanner {
+func NewProxyScanner(addr string, rep *report.Report) *ProxyScanner {
 	return &ProxyScanner{
 		ProxyAddr: addr,
-		Detector:  analysis.NewDetector(),
+		Detector:  analysis.NewDetector(rep),
 	}
 }
 
