@@ -8,10 +8,10 @@ import (
 )
 
 var (
-	reconDomain string
-	passive     bool
-	active      bool
-	fingerprint bool
+	reconDomain        string
+	passiveEnum        bool
+	activeEnum         bool
+	fingerprintEnabled bool
 )
 
 // reconCmd represents the recon command
@@ -26,11 +26,11 @@ var reconCmd = &cobra.Command{
 		}
 
 		// Subdomain enumeration
-		if passive || active {
+		if passiveEnum || activeEnum {
 			fmt.Printf("\n[*] Starting subdomain enumeration for: %s\n", reconDomain)
 			enumerator := recon.NewSubdomainEnumerator()
 
-			if passive {
+			if passiveEnum {
 				fmt.Println("\n[*] Passive subdomain enumeration (Certificate Transparency)...")
 				subdomains, err := enumerator.EnumeratePassive(reconDomain)
 				if err != nil {
@@ -43,7 +43,7 @@ var reconCmd = &cobra.Command{
 				}
 			}
 
-			if active {
+			if activeEnum {
 				fmt.Println("\n[*] Active subdomain enumeration (Bruteforce)...")
 				wordlist := recon.GetCommonWordlist()
 				found := enumerator.EnumerateActive(reconDomain, wordlist)
@@ -52,7 +52,7 @@ var reconCmd = &cobra.Command{
 		}
 
 		// Technology fingerprinting
-		if fingerprint {
+		if fingerprintEnabled {
 			target := fmt.Sprintf("https://%s", reconDomain)
 			fmt.Printf("\n[*] Fingerprinting technologies for: %s\n", target)
 
@@ -66,7 +66,7 @@ var reconCmd = &cobra.Command{
 			recon.PrintTechnologies(techs)
 		}
 
-		if !passive && !active && !fingerprint {
+		if !passiveEnum && !activeEnum && !fingerprintEnabled {
 			fmt.Println("Error: No recon mode selected. Use --passive, --active, or --fingerprint")
 		}
 	},
@@ -76,7 +76,7 @@ func init() {
 	rootCmd.AddCommand(reconCmd)
 
 	reconCmd.Flags().StringVar(&reconDomain, "domain", "", "Target domain for reconnaissance (required)")
-	reconCmd.Flags().BoolVar(&passive, "passive", false, "Passive subdomain enumeration")
-	reconCmd.Flags().BoolVar(&active, "active", false, "Active subdomain bruteforcing")
-	reconCmd.Flags().BoolVar(&fingerprint, "fingerprint", false, "Technology fingerprinting")
+	reconCmd.Flags().BoolVar(&passiveEnum, "passive", false, "Passive subdomain enumeration")
+	reconCmd.Flags().BoolVar(&activeEnum, "active", false, "Active subdomain bruteforcing")
+	reconCmd.Flags().BoolVar(&fingerprintEnabled, "fingerprint", false, "Technology fingerprinting")
 }
