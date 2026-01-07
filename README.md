@@ -5,7 +5,6 @@
   <h1>🛡️ ScoutSec</h1>
   <p><strong>Modern Web Application Security Scanning Toolkit</strong></p>
   
-  [![Go Report Card](https://goreportcard.com/badge/github.com/ismailtsdln/ScoutSec)](https://goreportcard.com/report/github.com/ismailtsdln/ScoutSec)
   [![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE)
   [![Go Version](https://img.shields.io/github/go-mod/go-version/ismailtsdln/ScoutSec)](go.mod)
   [![Build Status](https://github.com/ismailtsdln/ScoutSec/actions/workflows/ci.yaml/badge.svg)](https://github.com/ismailtsdln/ScoutSec/actions)
