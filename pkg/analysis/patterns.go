@@ -20,6 +20,12 @@ var DefaultPatterns = []Pattern{
 		Risk:        "High",
 	},
 	{
+		Name:        "SQL Injection (Generic)",
+		Regex:       regexp.MustCompile(`(?i)(OR 1=1|UNION SELECT|'--|#)`),
+		Description: "Common SQL Injection payload signature",
+		Risk:        "Medium",
+	},
+	{
 		Name:        "LFI / Path Traversal",
 		Regex:       regexp.MustCompile(`(\.\./\.\./|\.\.\\\.\.\\|/etc/passwd|c:\\windows\\win.ini)`),
 		Description: "Potential Path Traversal or LFI pattern",
