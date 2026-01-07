@@ -13,6 +13,7 @@ import (
 	"github.com/ismailtsdln/ScoutSec/pkg/tui"
 	"github.com/ismailtsdln/ScoutSec/pkg/utils"
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 )
 
 var (
@@ -51,6 +52,17 @@ You can choose to run active scanning, passive scanning (proxy), headless browse
 
 		scanType := "Mixed"
 		// Logic to determine type string...
+
+		// Update config from Viper (if config file present)
+		if viper.IsSet("rate") {
+			rateLimit = viper.GetInt("rate")
+		}
+		if viper.IsSet("timeout") {
+			timeout = viper.GetDuration("timeout")
+		}
+		if viper.IsSet("retries") {
+			retries = viper.GetInt("retries")
+		}
 
 		fmt.Printf("Rate Limit: %d req/s, Timeout: %s, Retries: %d\n", rateLimit, timeout, retries)
 		httpClient := utils.NewHTTPClient(rateLimit, timeout, retries)
@@ -161,4 +173,9 @@ func init() {
 	scanCmd.Flags().BoolVar(&useTUI, "tui", false, "Enable interactive TUI mode")
 	scanCmd.Flags().BoolVar(&middlewareScan, "middleware", false, "Enable middleware specific scans")
 	scanCmd.Flags().StringVar(&openapiSpec, "openapi", "", "URL or path to OpenAPI/Swagger spec for API fuzzing")
+
+	// Bind flags to viper
+	viper.BindPFlag("rate", scanCmd.Flags().Lookup("rate"))
+	viper.BindPFlag("timeout", scanCmd.Flags().Lookup("timeout"))
+	viper.BindPFlag("retries", scanCmd.Flags().Lookup("retries"))
 }

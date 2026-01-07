@@ -92,8 +92,11 @@ func initConfig() {
 		}
 
 		// Search config in home directory with name ".scoutsec" (without extension).
+		// Search config in home directory with name ".scoutsec" (without extension).
 		viper.AddConfigPath(home)
-		viper.SetConfigName(".scoutsec")
+		viper.AddConfigPath(".")
+		viper.SetConfigName("scoutsec")
+		viper.SetConfigType("yaml")
 	}
 
 	viper.AutomaticEnv() // read in environment variables that match
