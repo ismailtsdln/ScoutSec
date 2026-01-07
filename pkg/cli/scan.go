@@ -6,7 +6,9 @@ import (
 
 	"github.com/ismailtsdln/ScoutSec/pkg/report"
 	"github.com/ismailtsdln/ScoutSec/pkg/scanner/active"
+	"github.com/ismailtsdln/ScoutSec/pkg/scanner/api"
 	"github.com/ismailtsdln/ScoutSec/pkg/scanner/browser"
+	"github.com/ismailtsdln/ScoutSec/pkg/scanner/middleware"
 	"github.com/ismailtsdln/ScoutSec/pkg/scanner/passive"
 	"github.com/ismailtsdln/ScoutSec/pkg/tui"
 	"github.com/ismailtsdln/ScoutSec/pkg/utils"
@@ -14,15 +16,17 @@ import (
 )
 
 var (
-	activeScan  bool
-	passiveScan bool
-	useBrowser  bool
-	crawl       bool
-	resume      bool
-	rateLimit   int
-	timeout     time.Duration
-	retries     int
-	useTUI      bool
+	activeScan     bool
+	passiveScan    bool
+	useBrowser     bool
+	crawl          bool
+	resume         bool
+	rateLimit      int
+	timeout        time.Duration
+	retries        int
+	useTUI         bool
+	middlewareScan bool
+	openapiSpec    string
 )
 
 // scanCmd represents the scan command
@@ -108,6 +112,19 @@ You can choose to run active scanning, passive scanning (proxy), headless browse
 				}
 			}
 		}
+
+		if middlewareScan {
+			fmt.Println("Middleware scanning enabled")
+			ms := middleware.NewScanner(target)
+			ms.Start()
+		}
+
+		if openapiSpec != "" {
+			fmt.Printf("API scanning enabled with spec: %s\n", openapiSpec)
+			apiScanner := api.NewScanner(openapiSpec)
+			apiScanner.Start()
+		}
+
 		if passiveScan {
 			fmt.Println("Passive scanning enabled on :8080")
 			scanner := passive.NewProxyScanner(":8080")
@@ -142,4 +159,6 @@ func init() {
 	scanCmd.Flags().DurationVar(&timeout, "timeout", 10*time.Second, "Request timeout")
 	scanCmd.Flags().IntVar(&retries, "retries", 3, "Number of retries for failed requests")
 	scanCmd.Flags().BoolVar(&useTUI, "tui", false, "Enable interactive TUI mode")
+	scanCmd.Flags().BoolVar(&middlewareScan, "middleware", false, "Enable middleware specific scans")
+	scanCmd.Flags().StringVar(&openapiSpec, "openapi", "", "URL or path to OpenAPI/Swagger spec for API fuzzing")
 }
