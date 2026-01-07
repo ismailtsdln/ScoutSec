@@ -8,6 +8,7 @@ import (
 	"github.com/ismailtsdln/ScoutSec/pkg/scanner/active"
 	"github.com/ismailtsdln/ScoutSec/pkg/scanner/browser"
 	"github.com/ismailtsdln/ScoutSec/pkg/scanner/passive"
+	"github.com/ismailtsdln/ScoutSec/pkg/tui"
 	"github.com/ismailtsdln/ScoutSec/pkg/utils"
 	"github.com/spf13/cobra"
 )
@@ -21,6 +22,7 @@ var (
 	rateLimit   int
 	timeout     time.Duration
 	retries     int
+	useTUI      bool
 )
 
 // scanCmd represents the scan command
@@ -32,6 +34,15 @@ You can choose to run active scanning, passive scanning (proxy), headless browse
 	Args: cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		target := args[0]
+
+		// TUI Mode
+		if useTUI {
+			if err := tui.Run(target); err != nil {
+				fmt.Printf("TUI error: %v\n", err)
+			}
+			return
+		}
+
 		fmt.Printf("Starting scan against %s\n", target)
 
 		scanType := "Mixed"
@@ -130,4 +141,5 @@ func init() {
 	scanCmd.Flags().IntVar(&rateLimit, "rate", 10, "Rate limit (requests per second)")
 	scanCmd.Flags().DurationVar(&timeout, "timeout", 10*time.Second, "Request timeout")
 	scanCmd.Flags().IntVar(&retries, "retries", 3, "Number of retries for failed requests")
+	scanCmd.Flags().BoolVar(&useTUI, "tui", false, "Enable interactive TUI mode")
 }
