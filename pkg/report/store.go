@@ -6,9 +6,10 @@ import (
 )
 
 var (
-	GlobalReport *Report
-	once         sync.Once
-	mu           sync.Mutex
+	GlobalReport  *Report
+	IssueCallback func(Issue)
+	once          sync.Once
+	mu            sync.Mutex
 )
 
 // InitReport initializes the global report for the session.
@@ -29,5 +30,8 @@ func AddIssue(issue Issue) {
 	defer mu.Unlock()
 	if GlobalReport != nil {
 		GlobalReport.Issues = append(GlobalReport.Issues, issue)
+		if IssueCallback != nil {
+			IssueCallback(issue)
+		}
 	}
 }
