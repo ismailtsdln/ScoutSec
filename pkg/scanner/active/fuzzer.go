@@ -61,45 +61,50 @@ func (f *Fuzzer) worker(id int, jobs <-chan Payload, wg *sync.WaitGroup) {
 }
 
 func (f *Fuzzer) fuzzTarget(p Payload) {
-	// Simple query parameter fuzzing for demonstration
-	// In a real scenario, this would parse the URL and inject into specific params.
-
 	parsedURL, err := url.Parse(f.TargetURL)
 	if err != nil {
 		fmt.Printf("Error parsing URL: %v\n", err)
 		return
 	}
 
-	q := parsedURL.Query()
-	// Inject payload into a test parameter called 'test' if none exist, or append to existing?
-	// For simplicity, let's just append a fuzz param.
-	q.Set("fuzz_param", p.Content)
-	parsedURL.RawQuery = q.Encode()
+	// Multi-parameter fuzzing (Discovery)
+	queryParams := parsedURL.Query()
 
-	req, err := http.NewRequest("GET", parsedURL.String(), nil)
-	if err != nil {
-		return
+	// If no parameters, add a default one for testing
+	if len(queryParams) == 0 {
+		queryParams.Set("scout_test", "")
 	}
 
-	// Add a header to identify scanner (optional)
-	req.Header.Set("User-Agent", "ScoutSec/1.0")
+	// Mutate the payload
+	mutations := MutatePayload(p.Content)
 
-	resp, err := f.Client.Do(req)
-	if err != nil {
-		// Log error but continue
-		return
+	for param := range queryParams {
+		for _, mutation := range mutations {
+			// Create a copy of the query params
+			fuzzedParams := url.Values{}
+			for k, v := range queryParams {
+				fuzzedParams[k] = v
+			}
+
+			// Inject mutated payload
+			fuzzedParams.Set(param, mutation)
+			parsedURL.RawQuery = fuzzedParams.Encode()
+
+			req, err := http.NewRequest("GET", parsedURL.String(), nil)
+			if err != nil {
+				continue
+			}
+
+			req.Header.Set("User-Agent", "ScoutSec/2.0 (Advanced)")
+
+			resp, err := f.Client.Do(req)
+			if err != nil {
+				continue
+			}
+			defer resp.Body.Close()
+
+			// Analyze the response
+			f.Detector.AnalyzeResponse(resp)
+		}
 	}
-	defer resp.Body.Close()
-
-	// Analyze the response using the existing detector logic
-	// We might need to extend Detector to look for reflection of the payload specifically.
-	f.Detector.AnalyzeResponse(resp)
-
-	// Check for direct reflection of XSS payload
-	// buffer := new(bytes.Buffer)
-	// buffer.ReadFrom(resp.Body)
-	// body := buffer.String()
-	// if strings.Contains(body, p.Content) {
-	// 	fmt.Printf("[VULN] Reflected input detected for %s with payload %s\n", p.Name, p.Content)
-	// }
 }
