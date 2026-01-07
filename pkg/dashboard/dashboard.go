@@ -9,21 +9,24 @@ import (
 
 	"github.com/ismailtsdln/ScoutSec/pkg/database"
 	"github.com/ismailtsdln/ScoutSec/pkg/report"
+	"github.com/ismailtsdln/ScoutSec/pkg/scanner/active"
 )
 
 type Dashboard struct {
-	DB      *database.DB
-	clients map[chan report.Issue]bool
-	mu      sync.Mutex
+	DB            *database.DB
+	clients       map[chan report.Issue]bool
+	activeFuzzers map[string]*active.Fuzzer
+	mu            sync.Mutex
 }
 
 func NewDashboard(db *database.DB) *Dashboard {
 	d := &Dashboard{
-		DB:      db,
-		clients: make(map[chan report.Issue]bool),
+		DB:            db,
+		clients:       make(map[chan report.Issue]bool),
+		activeFuzzers: make(map[string]*active.Fuzzer),
 	}
 	// Register as report listener
-	report.IssueCallback = d.broadcastIssue
+	report.RegisterCallback(d.broadcastIssue)
 	return d
 }
 
@@ -83,13 +86,50 @@ func (d *Dashboard) startScanHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Target required", http.StatusBadRequest)
 		return
 	}
+
+	d.mu.Lock()
+	if _, exists := d.activeFuzzers[target]; exists {
+		d.mu.Unlock()
+		http.Error(w, "Scan already in progress for this target", http.StatusConflict)
+		return
+	}
+
+	// Initialize report if not already done
+	report.InitReport(target, "Active")
+
+	fuzzer := active.NewFuzzer(target, 5, nil) // nil client uses default in fuzzer
+	d.activeFuzzers[target] = fuzzer
+	d.mu.Unlock()
+
 	fmt.Printf("[Dashboard] Starting scan for: %s\n", target)
-	// Theoretically trigger scan logic here
+	go func() {
+		fuzzer.Start()
+		d.mu.Lock()
+		delete(d.activeFuzzers, target)
+		d.mu.Unlock()
+	}()
+
 	w.WriteHeader(http.StatusOK)
 }
 
 func (d *Dashboard) stopScanHandler(w http.ResponseWriter, r *http.Request) {
-	fmt.Println("[Dashboard] Stopping active scans")
+	target := r.URL.Query().Get("target")
+	d.mu.Lock()
+	defer d.mu.Unlock()
+
+	if target != "" {
+		if fuzzer, exists := d.activeFuzzers[target]; exists {
+			fmt.Printf("[Dashboard] Stopping scan for: %s\n", target)
+			fuzzer.Cancel()
+			delete(d.activeFuzzers, target)
+		}
+	} else {
+		fmt.Println("[Dashboard] Stopping all active scans")
+		for t, fuzzer := range d.activeFuzzers {
+			fuzzer.Cancel()
+			delete(d.activeFuzzers, t)
+		}
+	}
 	w.WriteHeader(http.StatusOK)
 }
 
@@ -111,6 +151,8 @@ func (d *Dashboard) indexHandler(w http.ResponseWriter, r *http.Request) {
 	for _, f := range findings {
 		stats[f.Severity]++
 	}
+	// Aggregate for the UI box
+	stats["LowInfo"] = stats["Low"] + stats["Info"]
 
 	tmpl := template.Must(template.New("dashboard").Parse(indexHTML))
 	data := struct {
@@ -176,7 +218,7 @@ const indexHTML = `
                 <span class="text-slate-500 uppercase text-xs mt-2">Medium</span>
             </div>
             <div class="card p-6 rounded-xl flex flex-col items-center justify-center">
-                <span id="statLow" class="text-3xl font-bold text-green-500">{{index .Stats "Low"}}</span>
+                <span id="statLow" class="text-3xl font-bold text-green-500">{{index .Stats "LowInfo"}}</span>
                 <span class="text-slate-500 uppercase text-xs mt-2">Low/Info</span>
             </div>
         </div>

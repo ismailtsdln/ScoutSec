@@ -35,8 +35,8 @@ and provides comprehensive reporting.`,
 				fmt.Printf("Warning: Failed to initialize database: %v\n", err)
 			} else {
 				fmt.Println("Database initialized successfully.")
-				// Hook up report callback
-				report.IssueCallback = func(issue report.Issue) {
+				// Register DB callback
+				report.RegisterCallback(func(issue report.Issue) {
 					finding := &database.Finding{
 						CreatedAt:   time.Now(),
 						Target:      report.GlobalReport.Target,
@@ -49,7 +49,7 @@ and provides comprehensive reporting.`,
 					if err := DB.SaveFinding(finding); err != nil {
 						fmt.Printf("Error saving finding to DB: %v\n", err)
 					}
-				}
+				})
 			}
 		}
 	},

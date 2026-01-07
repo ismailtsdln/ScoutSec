@@ -83,6 +83,9 @@ func (m *Master) SubmitResultsHandler(w http.ResponseWriter, r *http.Request) {
 	if task, ok := m.Tasks[body.TaskID]; ok {
 		task.Status = "Completed"
 		m.Findings = append(m.Findings, body.Issues...)
+		for _, issue := range body.Issues {
+			report.AddIssue(issue)
+		}
 		fmt.Printf("[Master] Received %d findings for task %s\n", len(body.Issues), body.TaskID)
 	} else {
 		http.Error(w, "Task not found", http.StatusNotFound)

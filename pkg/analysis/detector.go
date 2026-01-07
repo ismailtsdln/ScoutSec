@@ -96,11 +96,3 @@ func (d *Detector) checkPatterns(key, value, context string) {
 		}
 	}
 }
-
-// Normalize checks to avoid nil pointers
-func safeGetHeader(h http.Header, key string) string {
-	if h == nil {
-		return ""
-	}
-	return h.Get(key)
-}

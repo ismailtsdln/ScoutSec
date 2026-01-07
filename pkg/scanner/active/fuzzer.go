@@ -1,6 +1,7 @@
 package active
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 	"net/url"
@@ -17,10 +18,15 @@ type Fuzzer struct {
 	Detector    *analysis.Detector
 	WorkerCount int
 	Client      *utils.HTTPClient
+	Ctx         context.Context
+	Cancel      context.CancelFunc
 }
 
 // NewFuzzer creates a new instance of Fuzzer.
 func NewFuzzer(target string, workerCount int, client *utils.HTTPClient) *Fuzzer {
+	if client == nil {
+		client = utils.NewHTTPClient(10, 10, 3) // Defaults
+	}
 	return &Fuzzer{
 		TargetURL:   target,
 		Payloads:    GetDefaultPayloads(), // Start with default payloads
@@ -32,6 +38,9 @@ func NewFuzzer(target string, workerCount int, client *utils.HTTPClient) *Fuzzer
 
 // Start begins the active scanning process.
 func (f *Fuzzer) Start() {
+	if f.Ctx == nil {
+		f.Ctx, f.Cancel = context.WithCancel(context.Background())
+	}
 	var wg sync.WaitGroup
 	jobs := make(chan Payload, len(f.Payloads))
 
@@ -40,7 +49,7 @@ func (f *Fuzzer) Start() {
 	// Start workers
 	for i := 0; i < f.WorkerCount; i++ {
 		wg.Add(1)
-		go f.worker(i, jobs, &wg)
+		go f.worker(jobs, &wg)
 	}
 
 	// Send jobs
@@ -53,10 +62,18 @@ func (f *Fuzzer) Start() {
 	fmt.Println("\n[✓] Active scan completed.")
 }
 
-func (f *Fuzzer) worker(id int, jobs <-chan Payload, wg *sync.WaitGroup) {
+func (f *Fuzzer) worker(jobs <-chan Payload, wg *sync.WaitGroup) {
 	defer wg.Done()
-	for p := range jobs {
-		f.fuzzTarget(p)
+	for {
+		select {
+		case p, ok := <-jobs:
+			if !ok {
+				return
+			}
+			f.fuzzTarget(p)
+		case <-f.Ctx.Done():
+			return
+		}
 	}
 }
 
