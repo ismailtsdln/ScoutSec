@@ -10,14 +10,24 @@ func TestDefaultPatternsExist(t *testing.T) {
 		t.Error("DefaultPatterns should not be empty")
 	}
 
-	if len(DefaultPatterns) < 10 {
-		t.Errorf("Expected at least 10 patterns, got %d", len(DefaultPatterns))
+	if len(DefaultPatterns) < 50 {
+		t.Errorf("Expected at least 50 patterns, got %d", len(DefaultPatterns))
 	}
 }
 
 func TestPatternRegex(t *testing.T) {
-	// Test SQLi pattern
-	sqliPattern := DefaultPatterns[1] // SQL Injection (Generic)
+	// Find SQLi pattern
+	var sqliPattern *Pattern
+	for i := range DefaultPatterns {
+		if DefaultPatterns[i].Name == "SQL Injection (Generic Payload Signature)" {
+			sqliPattern = &DefaultPatterns[i]
+			break
+		}
+	}
+
+	if sqliPattern == nil {
+		t.Fatal("SQLi pattern not found")
+	}
 
 	testCases := []struct {
 		input       string
@@ -49,7 +59,7 @@ func TestSSRFPattern(t *testing.T) {
 	// Find SSRF pattern
 	var ssrfPattern *Pattern
 	for i := range DefaultPatterns {
-		if DefaultPatterns[i].Name == "Server-Side Request Forgery (SSRF)" {
+		if DefaultPatterns[i].Name == "SSRF (Localhost IPv4)" {
 			ssrfPattern = &DefaultPatterns[i]
 			break
 		}
