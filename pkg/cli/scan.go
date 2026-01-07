@@ -8,6 +8,7 @@ import (
 	"github.com/ismailtsdln/ScoutSec/pkg/scanner/active"
 	"github.com/ismailtsdln/ScoutSec/pkg/scanner/browser"
 	"github.com/ismailtsdln/ScoutSec/pkg/scanner/passive"
+	"github.com/ismailtsdln/ScoutSec/pkg/utils"
 	"github.com/spf13/cobra"
 )
 
@@ -17,6 +18,9 @@ var (
 	useBrowser  bool
 	crawl       bool
 	resume      bool
+	rateLimit   int
+	timeout     time.Duration
+	retries     int
 )
 
 // scanCmd represents the scan command
@@ -32,6 +36,10 @@ You can choose to run active scanning, passive scanning (proxy), headless browse
 
 		scanType := "Mixed"
 		// Logic to determine type string...
+
+		fmt.Printf("Rate Limit: %d req/s, Timeout: %s, Retries: %d\n", rateLimit, timeout, retries)
+		httpClient := utils.NewHTTPClient(rateLimit, timeout, retries)
+		_ = httpClient // Suppress unused var until passed to scanner
 
 		report.InitReport(target, scanType)
 
@@ -81,7 +89,7 @@ You can choose to run active scanning, passive scanning (proxy), headless browse
 				fmt.Println("Resuming: Skipping active scan phase (already done)")
 			} else {
 				fmt.Println("Active scanning enabled")
-				fuzzer := active.NewFuzzer(target, 5)
+				fuzzer := active.NewFuzzer(target, 5, httpClient)
 				fuzzer.Start()
 				// Mark done
 				if DB != nil {
@@ -119,4 +127,7 @@ func init() {
 	scanCmd.Flags().BoolVarP(&useBrowser, "browser", "b", false, "Enable headless browser scanning (Screenshots & DOM)")
 	scanCmd.Flags().BoolVarP(&crawl, "crawl", "c", false, "Enable SPA crawling to find links")
 	scanCmd.Flags().BoolVar(&resume, "resume", false, "Resume scan (skip already processed steps)")
+	scanCmd.Flags().IntVar(&rateLimit, "rate", 10, "Rate limit (requests per second)")
+	scanCmd.Flags().DurationVar(&timeout, "timeout", 10*time.Second, "Request timeout")
+	scanCmd.Flags().IntVar(&retries, "retries", 3, "Number of retries for failed requests")
 }

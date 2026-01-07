@@ -45,6 +45,17 @@
 *   **Subdomain Enumeration**: Hybrid approach using certificate transparency logs (passive) and DNS bruteforcing (active).
 *   **Tech Fingerprinting**: Identifies server technologies, frameworks, and libraries to tailor attack vectors.
 
+### 📊 Advanced Reporting
+*   Generate reports in **HTML**, **JSON**, **SARIF**, and **CSV** formats.
+*   SARIF integration for GitHub Security.
+
+### 💾 Persistence & Resume
+*   Save scan results to a local SQLite database using `--db`.
+*   Resume interrupted scans with the `--resume` flag.
+
+### ⚙️ Rate Limiting & Evasion
+*   Configurable request rates (`--rate`), timeouts (`--timeout`), and retries (`--retries`) to bypass WAFs and handle unstable networks.
+
 ---
 
 ## 🛠️ Installation
@@ -80,9 +91,18 @@ ScoutSec is CLI-first and designed for easy integration into scripts and pipelin
 scoutsec scan https://example.com
 ```
 
-**Full Active Scan with Fuzzing:**
+### Full Active Scan (Fuzzing) with Rate Limiting
 ```bash
-scoutsec scan https://example.com --active
+scoutsec scan https://example.com --active --rate 5 --timeout 15s --retries 2
+```
+
+### Scan with Persistence (Database & Resume)
+```bash
+# Start a scan and save to DB
+scoutsec scan https://example.com --active --db scan.db
+
+# Resume an interrupted scan
+scoutsec scan https://example.com --active --db scan.db --resume
 ```
 
 **Headless Browser Scan (SPAs):**
@@ -131,14 +151,19 @@ scoutsec recon --domain example.com --fingerprint
 
 ### 5. Reporting
 
-Generate reports in different formats:
-
+### Generating Reports
 ```bash
-# JSON Report (Default)
+# JSON Report
 scoutsec report --format json --output report.json
 
 # HTML Report
 scoutsec report --format html --output report.html
+
+# SARIF Report (GitHub Security)
+scoutsec report --format sarif --output report.sarif
+
+# CSV Report
+scoutsec report --format csv --output report.csv
 ```
 
 ---

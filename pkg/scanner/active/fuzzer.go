@@ -5,9 +5,9 @@ import (
 	"net/http"
 	"net/url"
 	"sync"
-	"time"
 
 	"github.com/ismailtsdln/ScoutSec/pkg/analysis"
+	"github.com/ismailtsdln/ScoutSec/pkg/utils"
 )
 
 // Fuzzer handles the active scanning logic.
@@ -16,19 +16,17 @@ type Fuzzer struct {
 	Payloads    []Payload
 	Detector    *analysis.Detector
 	WorkerCount int
-	Client      *http.Client
+	Client      *utils.HTTPClient
 }
 
 // NewFuzzer creates a new instance of Fuzzer.
-func NewFuzzer(target string, workerCount int) *Fuzzer {
+func NewFuzzer(target string, workerCount int, client *utils.HTTPClient) *Fuzzer {
 	return &Fuzzer{
 		TargetURL:   target,
 		Payloads:    GetDefaultPayloads(), // Start with default payloads
 		Detector:    analysis.NewDetector(),
 		WorkerCount: workerCount,
-		Client: &http.Client{
-			Timeout: 10 * time.Second,
-		},
+		Client:      client,
 	}
 }
 
