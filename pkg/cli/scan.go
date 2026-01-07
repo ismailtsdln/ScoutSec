@@ -75,7 +75,7 @@ You can choose to run active scanning, passive scanning (proxy), headless browse
 
 		if useBrowser || crawl {
 			fmt.Println("Browser engine initialized")
-			bScanner := browser.NewScanner(30 * time.Second)
+			bScanner := browser.NewScanner(30*time.Second, report.GlobalReport)
 
 			if useBrowser {
 				fmt.Println("Taking screenshot...")
@@ -89,7 +89,7 @@ You can choose to run active scanning, passive scanning (proxy), headless browse
 					fmt.Println("Resuming: Skipping crawl phase (already done)")
 				} else {
 					fmt.Println("Crawling target (SPA mode)...")
-					links, err := bScanner.Crawl(target)
+					links, err := bScanner.Crawl(target, 2) // Depth limit 2 for demo
 					if err != nil {
 						fmt.Printf("Error crawling: %v\n", err)
 					} else {
@@ -118,8 +118,11 @@ You can choose to run active scanning, passive scanning (proxy), headless browse
 			if resume && DB != nil && DB.IsScanned(target, "active_phase") {
 				fmt.Println("Resuming: Skipping active scan phase (already done)")
 			} else {
+				// Initialize report if not already done
+				report.InitReport(target, "Active")
+
 				fmt.Println("Active scanning enabled")
-				fuzzer := active.NewFuzzer(target, 5, httpClient)
+				fuzzer := active.NewFuzzer(target, 5, httpClient, report.GlobalReport)
 				fuzzer.Start()
 				// Mark done
 				if DB != nil {
@@ -130,13 +133,13 @@ You can choose to run active scanning, passive scanning (proxy), headless browse
 
 		if middlewareScan {
 			fmt.Println("Middleware scanning enabled")
-			ms := middleware.NewScanner(target)
+			ms := middleware.NewScanner(target, report.GlobalReport)
 			ms.Start()
 		}
 
 		if openapiSpec != "" {
 			fmt.Printf("API scanning enabled with spec: %s\n", openapiSpec)
-			apiScanner := api.NewScanner(openapiSpec)
+			apiScanner := api.NewScanner(openapiSpec, report.GlobalReport)
 			apiScanner.Start()
 		}
 
@@ -181,7 +184,7 @@ You can choose to run active scanning, passive scanning (proxy), headless browse
 
 		if passiveScan {
 			fmt.Println("Passive scanning enabled on :8080")
-			scanner := passive.NewProxyScanner(":8080")
+			scanner := passive.NewProxyScanner(":8080", report.GlobalReport)
 			go func() {
 				if err := scanner.Start(); err != nil {
 					fmt.Printf("Error starting proxy: %v\n", err)

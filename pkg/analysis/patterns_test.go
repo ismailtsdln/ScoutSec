@@ -48,7 +48,7 @@ func TestPatternRegex(t *testing.T) {
 }
 
 func TestDetectorAnalyzeRequest(t *testing.T) {
-	detector := NewDetector()
+	detector := NewDetector(nil)
 	req, _ := http.NewRequest("GET", "http://example.com?id=' OR 1=1--", nil)
 
 	// This should not panic

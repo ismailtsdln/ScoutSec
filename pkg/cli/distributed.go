@@ -27,8 +27,9 @@ var masterCmd = &cobra.Command{
 		report.InitReport("Distributed Master", "Distributed")
 		m := distributed.NewMaster(masterPort)
 
-		// Example: Add a dummy task for testing
-		m.AddTask("http://testphp.vulnweb.com")
+		// Example: Add dummy tasks for testing
+		m.AddTask("http://testphp.vulnweb.com", "middleware")
+		m.AddTask("http://testphp.vulnweb.com", "active")
 
 		if err := m.Start(); err != nil {
 			fmt.Printf("Master error: %v\n", err)

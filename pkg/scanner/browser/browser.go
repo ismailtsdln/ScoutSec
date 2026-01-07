@@ -3,21 +3,26 @@ package browser
 import (
 	"context"
 	"fmt"
+	"net/url"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/chromedp/chromedp"
+	"github.com/ismailtsdln/ScoutSec/pkg/report"
 )
 
 // Scanner handles headless browser interactions.
 type Scanner struct {
 	Timeout time.Duration
+	Report  *report.Report
 }
 
 // NewScanner creates a new browser scanner.
-func NewScanner(timeout time.Duration) *Scanner {
+func NewScanner(timeout time.Duration, rep *report.Report) *Scanner {
 	return &Scanner{
 		Timeout: timeout,
+		Report:  rep,
 	}
 }
 
@@ -43,28 +48,46 @@ func (s *Scanner) CaptureScreenshot(url, filename string) error {
 }
 
 // ScanDOMXSS attempts to check for DOM XSS sources/sinks.
-// This is a simplified check that looks for execution of a JS payload that writes to DOM.
-func (s *Scanner) ScanDOMXSS(url string, payload string) (bool, error) {
+func (s *Scanner) ScanDOMXSS(url string) (bool, error) {
 	ctx, cancel := s.createContext()
 	defer cancel()
 
-	// Inject payload into URL fragment or query param if not present
-	target := url + "#" + payload
-
-	var res string
-	err := chromedp.Run(ctx,
-		chromedp.Navigate(target),
-		chromedp.Sleep(1*time.Second),
-		// Check if payload execution modified the title or a specific global var
-		chromedp.Evaluate(`document.title`, &res),
-	)
-	if err != nil {
-		return false, err
+	// Payloads to test for DOM XSS
+	payloads := []string{
+		"<script>document.title='DOMXSS'</script>",
+		"javascript:document.title='DOMXSS'",
 	}
 
-	// This is a very naive check; real DOM XSS scanning is complex.
-	// We might check if our payload (e.g., changing title) worked.
-	return false, nil // Placeholder return
+	for _, p := range payloads {
+		target := url + "#" + p
+		var title string
+		err := chromedp.Run(ctx,
+			chromedp.Navigate(target),
+			chromedp.Sleep(2*time.Second),
+			chromedp.Evaluate(`document.title`, &title),
+		)
+		if err != nil {
+			continue
+		}
+
+		if title == "DOMXSS" {
+			issue := report.Issue{
+				Name:        "DOM-based XSS Detected",
+				Description: "Application executes JavaScript from the URL fragment (sink: document.title).",
+				Severity:    "High",
+				URL:         url,
+				Evidence:    fmt.Sprintf("Payload %s successfully modified document title", p),
+			}
+			if s.Report != nil {
+				s.Report.AddIssue(issue)
+			} else {
+				report.AddIssue(issue)
+			}
+			return true, nil
+		}
+	}
+
+	return false, nil
 }
 
 func (s *Scanner) createContext() (context.Context, context.CancelFunc) {
@@ -94,18 +117,42 @@ func (s *Scanner) createContext() (context.Context, context.CancelFunc) {
 }
 
 // Crawl visits a URL and extracts all href links from <a> tags.
-func (s *Scanner) Crawl(url string) ([]string, error) {
+func (s *Scanner) Crawl(url string, maxDepth int) ([]string, error) {
+	visited := make(map[string]bool)
+	var allLinks []string
+	s.recursiveCrawl(url, 0, maxDepth, visited, &allLinks)
+	return allLinks, nil
+}
+
+func (s *Scanner) recursiveCrawl(url string, depth, maxDepth int, visited map[string]bool, allLinks *[]string) {
+	if depth > maxDepth || visited[url] {
+		return
+	}
+	visited[url] = true
+	*allLinks = append(*allLinks, url)
+
 	ctx, cancel := s.createContext()
 	defer cancel()
 
 	var links []string
 	err := chromedp.Run(ctx,
 		chromedp.Navigate(url),
-		chromedp.Sleep(2*time.Second), // Allow SPA to render
+		chromedp.Sleep(2*time.Second),
 		chromedp.Evaluate(`Array.from(document.querySelectorAll('a')).map(a => a.href)`, &links),
 	)
 	if err != nil {
-		return nil, err
+		return
 	}
-	return links, nil
+
+	for _, link := range links {
+		// Only stay within same domain/base for safety in this crawler
+		if strings.HasPrefix(link, s.TargetBase(url)) {
+			s.recursiveCrawl(link, depth+1, maxDepth, visited, allLinks)
+		}
+	}
+}
+
+func (s *Scanner) TargetBase(rawURL string) string {
+	u, _ := url.Parse(rawURL)
+	return u.Scheme + "://" + u.Host
 }

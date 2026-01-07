@@ -97,7 +97,7 @@ func (d *Dashboard) startScanHandler(w http.ResponseWriter, r *http.Request) {
 	// Initialize report if not already done
 	report.InitReport(target, "Active")
 
-	fuzzer := active.NewFuzzer(target, 5, nil) // nil client uses default in fuzzer
+	fuzzer := active.NewFuzzer(target, 5, nil, report.GlobalReport)
 	d.activeFuzzers[target] = fuzzer
 	d.mu.Unlock()
 

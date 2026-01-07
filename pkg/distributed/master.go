@@ -14,8 +14,10 @@ import (
 type Task struct {
 	ID       string `json:"id"`
 	Target   string `json:"target"`
-	Status   string `json:"status"` // Pending, Running, Completed, Failed
+	ScanType string `json:"scan_type"` // "active", "middleware", "api", "recon"
+	Status   string `json:"status"`    // Pending, Running, Completed, Failed
 	WorkerID string `json:"worker_id,omitempty"`
+	Config   string `json:"config,omitempty"` // JSON serialized additional config
 }
 
 // Master manages tasks and workers.
@@ -35,17 +37,18 @@ func NewMaster(port string) *Master {
 }
 
 // AddTask adds a new task to the queue.
-func (m *Master) AddTask(target string) string {
+func (m *Master) AddTask(target, scanType string) string {
 	m.TasksLock.Lock()
 	defer m.TasksLock.Unlock()
 
 	id := fmt.Sprintf("task-%d", time.Now().UnixNano())
 	m.Tasks[id] = &Task{
-		ID:     id,
-		Target: target,
-		Status: "Pending",
+		ID:       id,
+		Target:   target,
+		ScanType: scanType,
+		Status:   "Pending",
 	}
-	fmt.Printf("[Master] Added task %s for target %s\n", id, target)
+	fmt.Printf("[Master] Added %s task %s for target %s\n", scanType, id, target)
 	return id
 }
 

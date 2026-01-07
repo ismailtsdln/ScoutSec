@@ -16,15 +16,17 @@ import (
 type Scanner struct {
 	SpecURL string
 	Client  *http.Client
+	Report  *report.Report
 }
 
 // NewScanner creates a new API Scanner.
-func NewScanner(specURL string) *Scanner {
+func NewScanner(specURL string, rep *report.Report) *Scanner {
 	return &Scanner{
 		SpecURL: specURL,
 		Client: &http.Client{
 			Timeout: 10 * time.Second,
 		},
+		Report: rep,
 	}
 }
 
@@ -101,13 +103,18 @@ func (s *Scanner) fuzzEndpoint(baseURL, path, method string, op *openapi3.Operat
 
 				if resp.StatusCode == 500 {
 					fmt.Printf("[!] Possible SQLi in %s param %s with payload %s\n", method, param.Name, p)
-					report.AddIssue(report.Issue{
+					issue := report.Issue{
 						Name:        "Possible API SQL Injection",
 						Description: fmt.Sprintf("500 Error triggered by SQLi payload in param %s", param.Name),
 						Severity:    "High",
 						URL:         fuzzURL,
 						Evidence:    fmt.Sprintf("Payload: %s triggered 500 Internal Server Error", p),
-					})
+					}
+					if s.Report != nil {
+						s.Report.AddIssue(issue)
+					} else {
+						report.AddIssue(issue)
+					}
 				}
 			}
 		}

@@ -79,15 +79,17 @@ func DefaultFingerprints() []Fingerprint {
 type Scanner struct {
 	Target string
 	Client *http.Client
+	Report *report.Report
 }
 
 // NewScanner creates a new Middleware Scanner.
-func NewScanner(target string) *Scanner {
+func NewScanner(target string, rep *report.Report) *Scanner {
 	return &Scanner{
 		Target: target,
 		Client: &http.Client{
 			Timeout: 10 * time.Second,
 		},
+		Report: rep,
 	}
 }
 
@@ -133,13 +135,18 @@ func (s *Scanner) checkFingerprint(fp Fingerprint, wg *sync.WaitGroup) {
 			msg := fmt.Sprintf("Found %s at %s", fp.Name, url)
 			fmt.Println("[!] " + msg)
 
-			report.AddIssue(report.Issue{
+			issue := report.Issue{
 				Name:        "Middleware Detected: " + fp.Name,
 				Description: fp.Description,
 				Severity:    fp.Severity,
 				URL:         url,
 				Evidence:    fmt.Sprintf("Matched string '%s' at %s", fp.MatchString, url),
-			})
+			}
+			if s.Report != nil {
+				s.Report.AddIssue(issue)
+			} else {
+				report.AddIssue(issue)
+			}
 		}
 	}
 }
